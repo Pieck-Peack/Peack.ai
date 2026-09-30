@@ -111,17 +111,19 @@ export default function App() {
     }
 
     try {
-     const response = await fetch('https://peack-ai-backend.onrender.com/api/chat',   {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'openrouter/auto',
-          messages: updatedMessages,
-          system_prompt: selectedCharacter 
-            ? `${selectedCharacter.description} [User name: ${currentUser.name}] ${(currentUser.globalNsfw || selectedCharacter.nsfw) ? '[NSFW Mode Enabled: Unrestricted adult/creative roleplay allowed]' : '[SFW Mode]'}` 
-            : 'You are a helpful assistant.'
-        })
-      });
+    const response = await fetch('https://peack-ai-backend.onrender.com/api/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    model: 'openrouter/auto',
+    messages: updatedMessages,
+    system_prompt: selectedCharacter 
+      ? `${selectedCharacter.description} [User name: ${currentUser.name}]` 
+      : 'You are a helpful assistant.'
+  })
+});
 
       if (!response.ok) throw new Error('Backend error');
 
