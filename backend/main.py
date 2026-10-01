@@ -127,7 +127,7 @@ def register_user(user: UserAuth):
         # Erster registrierter Account wird automatisch Owner (oder prüfe auf "Pieck")
         cursor.execute("SELECT COUNT(*) FROM users")
         count = cursor.fetchone()[0]
-        is_owner = 1 if (count == 0 or user.username.lower() == "pieck") else 0
+        is_owner = 1 if user.username.lower() == "Pieck" else 0
 
         cursor.execute(
             "INSERT INTO users (username, password, is_owner) VALUES (?, ?, ?)",
