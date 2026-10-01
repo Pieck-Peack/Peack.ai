@@ -72,3 +72,137 @@ async def chat_endpoint(req: ChatRequest):
 @app.get("/")
 def health_check():
     return {"status": "online", "service": "Peack AI Backend"}
+import sqlite3
+from fastapi import HTTPException
+
+# --- DATENBANK & MODELLE ---
+
+def init_db():
+    conn = sqlite3.connect("peack.db")
+    cursor = conn.cursor()
+    # Benutzer-Tabelle
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            password TEXT,
+            is_owner BOOLEAN DEFAULT 0
+        )
+    """)
+    # Bot-Tabelle (mit Ersteller-Zuordnung zum Schutz vor Fremdlöschung)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS bots (
+            id TEXT PRIMARY KEY,
+            name TEXT,
+            gender TEXT,
+            description TEXT,
+            creator TEXT,
+            nsfw BOOLEAN
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+class UserAuth(BaseModel):
+    username: str
+    password: str
+
+class BotModel(BaseModel):
+    id: str
+    name: str
+    gender: str
+    description: str
+    creator: str
+    nsfw: bool = True
+
+# --- API ENDPUNKTE FÜR ACCOUNTS & BOTS ---
+
+@app.post("/api/register")
+def register_user(user: UserAuth):
+    conn = sqlite3.connect("peack.db")
+    cursor = conn.cursor()
+    try:
+        # Erster registrierter Account wird automatisch Owner (oder prüfe auf "Pieck")
+        cursor.execute("SELECT COUNT(*) FROM users")
+        count = cursor.fetchone()[0]
+        is_owner = 1 if (count == 0 or user.username.lower() == "pieck") else 0
+
+        cursor.execute(
+            "INSERT INTO users (username, password, is_owner) VALUES (?, ?, ?)",
+            (user.username, user.password, is_owner)
+        )
+        conn.commit()
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Username already taken.")
+    conn.close()
+    return {"success": True, "username": user.username, "is_owner": bool(is_owner)}
+
+@app.post("/api/login")
+def login_user(user: UserAuth):
+    conn = sqlite3.connect("peack.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT username, is_owner FROM users WHERE username = ? AND password = ?", (user.username, user.password))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row:
+        raise HTTPException(status_code=401, detail="Invalid username or password.")
+    
+    return {"success": True, "username": row[0], "is_owner": bool(row[1])}
+
+@app.post("/api/bots")
+def save_bot(bot: BotModel):
+    conn = sqlite3.connect("peack.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO bots (id, name, gender, description, creator, nsfw)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (bot.id, bot.name, bot.gender, bot.description, bot.creator, bot.nsfw))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "Bot saved successfully."}
+
+@app.get("/api/bots")
+def get_bots():
+    conn = sqlite3.connect("peack.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, gender, description, creator, nsfw FROM bots")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    bots = []
+    for r in rows:
+        bots.append({
+            "id": r[0],
+            "name": r[1],
+            "gender": r[2],
+            "description": r[3],
+            "creator": r[4],
+            "nsfw": bool(r[5])
+        })
+    return bots
+
+@app.delete("/api/bots/{bot_id}")
+def delete_bot(bot_id: str, username: str):
+    conn = sqlite3.connect("peack.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT creator FROM bots WHERE id = ?", (bot_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Bot not found.")
+    
+    bot_creator = row[0]
+    # Schutzmechanismus: Nur der Ersteller (oder Owner) darf den Bot global löschen!
+    if bot_creator != username and username.lower() != "pieck":
+        conn.close()
+        raise HTTPException(status_code=403, detail="Unauthorized: Only the creator can delete this bot.")
+    
+    cursor.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "Bot deleted globally."}

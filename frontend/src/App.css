@@ -182,3 +182,7 @@
     border-right-color: var(--border);
   }
 }
+/* Automatischer Puffer für Handy-Navigationsleisten unten */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 40px);
+}

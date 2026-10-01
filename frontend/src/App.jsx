@@ -1,22 +1,88 @@
 import React, { useState } from 'react';
 
-export default function App() {
+ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCharacter, setSelectedCharacter] = useState(null);
-  
-  // Suchbegriff für den kombinierten Home/Search-Bereich
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Nur noch du als Owner (Pieck)
-  const [currentUser, setCurrentUser] = useState({
-    id: 'owner-1',
-    name: 'Pieck',
-    role: 'owner',
-    avatar: null,
-    globalNsfw: true
-  });
+
+  // ==========================================
+  // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
+  // ==========================================
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
+  const [usernameInput, setUsernameInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
+  const [authError, setAuthError] = useState('');
+
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: usernameInput, password: passwordInput })
+      });
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCurrentUser({
+          name: data.username,
+          role: data.is_owner ? 'owner' : 'user',
+          globalNsfw: true
+        });
+      } else {
+        setAuthError(data.detail || 'Ein Fehler ist aufgetreten.');
+      }
+    } catch (err) {
+      setAuthError('Verbindung zum Server fehlgeschlagen.');
+    }
+  };
+
+  // Login-Bildschirm Schutz (wenn nicht eingeloggt, zeige nur das Formular)
+  if (!currentUser) {
+    return (
+      <div style={{ padding: '40px', color: '#fff', textAlign: 'center', background: '#0b0f19', minHeight: '100vh' }}>
+        <h2>Welcome to Peack.ai</h2>
+        <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen neuen Account'}</p>
+        
+        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px', margin: '0 auto', gap: '15px' }}>
+          <input 
+            type="text" 
+            placeholder="Benutzername" 
+            value={usernameInput} 
+            onChange={(e) => setUsernameInput(e.target.value)}
+            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff', border: '1px solid #333' }}
+            required
+          />
+          <input 
+            type="password" 
+            placeholder="Passwort" 
+            value={passwordInput} 
+            onChange={(e) => setPasswordInput(e.target.value)}
+            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff', border: '1px solid #333' }}
+            required
+          />
+          <button type="submit" style={{ padding: '10px', borderRadius: '5px', background: '#ff3366', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+            {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
+          </button>
+        </form>
+
+        {authError && <p style={{ color: '#ff4d4d', marginTop: '10px' }}>{authError}</p>}
+
+        <p style={{ marginTop: '20px', cursor: 'pointer', color: '#ff3366' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+          {authMode === 'login' ? 'Noch keinen Account? Hier registrieren' : 'Schon einen Account? Hier einloggen'}
+        </p>
+      </div>
+    );
+  }
+  // ==========================================
+  // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
+  // ==========================================
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempUserName, setTempUserName] = useState(currentUser.name);
