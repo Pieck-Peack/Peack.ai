@@ -221,7 +221,13 @@ import React, { useState } from 'react';
     setEditedMessageContent('');
     handleSendMessage(null, newMsgs);
   };
-
+// Funktion zum Ausloggen (setzt den currentUser auf null zurück)
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setAuthMode('login');
+    setUsernameInput('');
+    setPasswordInput('');
+  }; 
   const handleRegenerate = () => {
     if (messages.length <= 1) return;
     const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
