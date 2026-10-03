@@ -3,11 +3,16 @@ import { supabase } from './supabaseClient'; // <-- HIER diesen Import ergänzen
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
-  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('peack_chat_messages');
+    return saved ? JSON.parse(saved) : [];
+  });
+useEffect(() => {
+  localStorage.setItem('peack_chat_messages', JSON.stringify(messages));
+}, [messages]);
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
   // ==========================================
@@ -47,7 +52,9 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
-
+  useEffect(() => {
+    localStorage.setItem('peack_chat_messages', JSON.stringify(messages));
+  }, [messages]);
   // Login-Funktion
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -216,6 +223,7 @@ export default function App() {
       const userMsg = { role: 'user', content: inputMessage };
       updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
+      localStorage.setItem('peack_chat_messages', JSON.stringify(updatedMessages));
       setInputMessage('');
     }
 
