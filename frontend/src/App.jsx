@@ -10,7 +10,7 @@ export default function App() {
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
   // ==========================================
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState({ name: 'Pieck' });
   const [authMode, setAuthMode] = useState('login');
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
