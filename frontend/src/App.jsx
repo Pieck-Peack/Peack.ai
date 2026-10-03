@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from './supabaseClient'; // <-- HIER diesen Import ergänzen!
+import { supabase } from './supabaseClient';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -7,16 +7,22 @@ export default function App() {
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem('peack_chat_messages');
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem('peack_chat_messages');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
   });
-useEffect(() => {
-  localStorage.setItem('peack_chat_messages', JSON.stringify(messages));
-}, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem('peack_chat_messages', JSON.stringify(messages));
+  }, [messages]);
+
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
   // ==========================================
-   // Supabase Auth Integration für die Community
+  // Supabase Auth Integration für die Community
   const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' oder 'register'
   const [emailInput, setEmailInput] = useState('');
@@ -24,7 +30,7 @@ useEffect(() => {
   const [authError, setAuthError] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
- // Supabase Auth-State-Listener & Session-Check
+  // Supabase Auth-State-Listener & Session-Check
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -52,10 +58,7 @@ useEffect(() => {
       subscription.unsubscribe();
     };
   }, []);
-  useEffect(() => {
-    localStorage.setItem('peack_chat_messages', JSON.stringify(messages));
-  }, [messages]);
-  // Login-Funktion
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -65,7 +68,14 @@ useEffect(() => {
     });
     if (error) setAuthError(error.message);
   };
-  // Registrierungs-Funktion
+
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+    });
+    if (error) setAuthError(error.message);
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setAuthError('');
@@ -81,11 +91,10 @@ useEffect(() => {
     }
   };
 
-  // Logout-Funktion
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
-  // Gast-Modus-Funktion
+
   const handleGuestLogin = () => {
     setCurrentUser({
       name: 'Gast',
@@ -234,7 +243,7 @@ useEffect(() => {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    model: 'openrouter/auto',
+   model: 'google/gemini-flash-1.5',
     messages: updatedMessages,
     system_prompt: selectedCharacter 
       ? `${selectedCharacter.description} [User name: ${currentUser.name}]` 
@@ -442,12 +451,23 @@ useEffect(() => {
           {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
         </button>
       </form>
-<button 
-  type="button" 
+{/* Gast-Button */}
+<button
+  type="button"
   onClick={handleGuestLogin}
-  style={{ background: 'transparent', border: '1px solid #ffcc00', color: '#ffcc00', marginTop: '10px', padding: '12px', borderRadius: '8px', cursor: 'pointer', width: '100%', fontWeight: 'bold' }}
+  style={{ background: 'transparent', border: '1px solid #ffcc00', color: '#ffcc00', marginTop: '10px', padding: '12px', borderRadius: '8px', fontWeight: 'bold', width: '100%', cursor: 'pointer' }}
 >
   Als Gast fortfahren
+</button>
+
+{/* Google-Login-Button */}
+<button
+  type="button"
+  onClick={handleGoogleLogin}
+  style={{ background: '#fff', border: '1px solid #ccc', color: '#333', marginTop: '10px', padding: '12px', borderRadius: '8px', fontWeight: 'bold', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+>
+  <img src="https://www.svgrepo.com/show/475656/google-color.svg" style={{ width: '20px', height: '20px' }} alt="Google" />
+  Mit Google anmelden
 </button>
       <p 
         style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8', fontSize: '14px' }} 
