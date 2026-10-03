@@ -10,13 +10,72 @@ export default function App() {
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
   // ==========================================
-   const [currentUser, setCurrentUser] = useState({ name: 'Pieck', role: 'owner' });
-  const [authMode, setAuthMode] = useState('login');
-  const [usernameInput, setUsernameInput] = useState('');
+   // Supabase Auth Integration für die Community
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authMode, setAuthMode] = useState('login'); // 'login' oder 'register'
+  const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
-   const [showLoginModal, setShowLoginModal] = useState(false);
-   const [isEditingName, setIsEditingName] = useState(false); 
+  const [isEditingName, setIsEditingName] = useState(false);
+
+  // Beim Start prüfen, ob bereits ein Nutzer eingeloggt ist
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setCurrentUser({
+          name: session.user.email.split('@')[0],
+          email: session.user.email,
+          role: session.user.email === 'chiara12dahlmann@gmail.com' ? 'owner' : 'member'
+        });
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setCurrentUser({
+          name: session.user.email.split('@')[0],
+          email: session.user.email,
+          role: session.user.email === 'chiara12dahlmann@gmail.com' ? 'owner' : 'member'
+        });
+      } else {
+        setCurrentUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Login-Funktion
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: emailInput,
+      password: passwordInput,
+    });
+    if (error) setAuthError(error.message);
+  };
+
+  // Registrierungs-Funktion
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    const { error } = await supabase.auth.signUp({
+      email: emailInput,
+      password: passwordInput,
+    });
+    if (error) {
+      setAuthError(error.message);
+    } else {
+      alert('Registrierung erfolgreich! Du kannst dich jetzt einloggen.');
+      setAuthMode('login');
+    }
+  };
+
+  // Logout-Funktion
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
   // ==========================================
   // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
   // ==========================================
@@ -94,31 +153,39 @@ export default function App() {
   ? 'http://127.0.0.1:8000' 
   : 'https://peack-ai-backend.onrender.com'; // Falls deine Render-Backend-URL so heißt
   const handleAuth = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
-    
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: usernameInput, password: passwordInput })
+  e.preventDefault();
+  setAuthError('');
+
+  try {
+    let response;
+    if (authMode === 'login') {
+      // Supabase Login
+      response = await supabase.auth.signInWithPassword({
+        email: usernameInput, // Hier wird die E-Mail aus dem Input-Feld genutzt
+        password: passwordInput,
       });
-      const data = await response.json();
-      
-      if (response.ok) {
-        setCurrentUser({
-          name: data.username,
-          role: data.is_owner ? 'owner' : 'user',
-          globalNsfw: true
-        });
-      } else {
-        setAuthError(data.detail || 'Ein Fehler ist aufgetreten.');
-      }
-    } catch (err) {
-      setAuthError('Verbindung zum Server fehlgeschlagen.');
+    } else {
+      // Supabase Registrierung
+      response = await supabase.auth.signUp({
+        email: usernameInput,
+        password: passwordInput,
+      });
     }
-  };
+
+    if (response.error) {
+      setAuthError(response.error.message);
+    } else if (response.data?.user) {
+      // Erfolgreich eingeloggt/registriert
+      setCurrentUser({
+        name: response.data.user.email,
+        role: 'user',
+        globalNsfw: true
+      });
+    }
+  } catch (err) {
+    setAuthError('Verbindung zu Supabase fehlgeschlagen.');
+  }
+};
   const handleImageUpload = (e, callback) => {
   const file = e.target.files[0];
   if (file) {
@@ -314,18 +381,27 @@ export default function App() {
   const pinnedCharacters = characters.filter(c => c.pinned && !currentBlockedIds.includes(c.id));
   const recentCharacters = characters.filter(c => !c.pinned && !currentBlockedIds.includes(c.id));
 
-  return !currentUser ? (
-    <div style={{ padding: '40px', color: '#fff', textAlign: 'center' }}>
-      <h2>Welcome to Peack.ai</h2>
-      <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen Account'}</p>
+ return !currentUser ? (
+  <div style={{ padding: '40px', color: '#fff', textAlign: 'center', background: '#0b0f19', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+    <div style={{ width: '100%', maxWidth: '400px', background: '#131825', border: '1px solid #333', padding: '30px', borderRadius: '15px' }}>
+      <h2 style={{ color: '#fbbf24', marginBottom: '10px' }}>PEACK.AI</h2>
+      <p style={{ color: '#9ca3af', marginBottom: '20px' }}>
+        {authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen Account'}
+      </p>
 
-      <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px', margin: '0 auto', gap: '10px' }}>
+      {authError && (
+        <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#f87171', padding: '10px', borderRadius: '8px', marginBottom: '15px', fontSize: '14px' }}>
+          {authError}
+        </div>
+      )}
+
+      <form onSubmit={authMode === 'login' ? handleLogin : handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
         <input
-          type="text"
-          placeholder="Benutzername"
-          value={usernameInput}
-          onChange={(e) => setUsernameInput(e.target.value)}
-          style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
+          type="email"
+          placeholder="E-Mail-Adresse"
+          value={emailInput}
+          onChange={(e) => setEmailInput(e.target.value)}
+          style={{ padding: '12px', borderRadius: '8px', background: '#1a2236', border: '1px solid #444', color: '#fff', outline: 'none' }}
           required
         />
         <input
@@ -333,21 +409,30 @@ export default function App() {
           placeholder="Passwort"
           value={passwordInput}
           onChange={(e) => setPasswordInput(e.target.value)}
-          style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
+          style={{ padding: '12px', borderRadius: '8px', background: '#1a2236', border: '1px solid #444', color: '#fff', outline: 'none' }}
           required
         />
-        <button type="submit" style={{ padding: '10px', borderRadius: '5px', background: '#4f46e5', color: '#fff', cursor: 'pointer' }}>
+        <button 
+          type="submit" 
+          style={{ padding: '12px', borderRadius: '8px', background: '#fbbf24', color: '#000', fontWeight: 'bold', border: 'none', cursor: 'pointer', marginTop: '5px' }}
+        >
           {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
         </button>
       </form>
 
-      {authError && <p style={{ color: '#ff4d4d', marginTop: '10px' }}>{authError}</p>}
-
-      <p style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+      <p 
+        style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8', fontSize: '14px' }} 
+        onClick={() => {
+          setAuthMode(authMode === 'login' ? 'register' : 'login');
+          setAuthError('');
+        }}
+      >
         {authMode === 'login' ? 'Noch keinen Account? Hier registrieren' : 'Schon einen Account? Einloggen'}
       </p>
     </div>
-  ) : (
+  </div>
+) : (
+  // Hier beginnt deine normale App (Dashboard, Tabs etc.), wenn man eingeloggt ist!
     <div className="min-h-screen bg-[#07090e] text-white flex flex-col items-center justify-center p-0 sm:p-4 font-sans">
       <div className="w-full sm:max-w-md h-screen sm:h-[850px] bg-[#0c0f17] sm:border sm:border-gray-800 sm:rounded-3xl flex flex-col relative overflow-hidden shadow-2xl">
         
@@ -842,7 +927,21 @@ export default function App() {
                   </div>
                 )}
               </div>
-
+<div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl flex items-center justify-between">
+  <div>
+    <div className="text-sm font-bold text-gray-200">Account-Sitzung</div>
+    <div className="text-[11px] text-gray-500">Aktuell angemeldet über Supabase.</div>
+  </div>
+  <button
+    onClick={async () => {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+    }}
+    className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl font-bold transition text-xs"
+  >
+    Ausloggen
+  </button>
+</div>
               <div className="bg-[#131825] border border-gray-800 p-6 rounded-3xl flex flex-col items-center space-y-3">
                 <div className="w-20 h-20 rounded-full border-2 border-rose-500 bg-gray-800 flex items-center justify-center text-2xl overflow-hidden relative group">
                   {currentUser.avatar ? (
