@@ -10,12 +10,12 @@ export default function App() {
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
   // ==========================================
-  const [currentUser, setCurrentUser] = useState({ name: 'Pieck' });
+   const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState('login');
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
-   const [showLoginModal, setShowLoginModal] = useState(false);
+   const [showLoginModal, setShowLoginModal] = useState(true);
    const [isEditingName, setIsEditingName] = useState(false); 
   // ==========================================
   // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
@@ -375,11 +375,20 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <div className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-widest flex items-center gap-1 border bg-rose-500/20 border-rose-500/40 text-rose-300">
-              <span>👑</span> {currentUser.role}
-            </div>
-          </div>
+         <div className="flex items-center space-x-2">
+  {currentUser ? (
+    <div className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-slate-800 text-slate-200">
+      <span>👑</span> {currentUser.role}
+    </div>
+  ) : (
+    <button 
+      onClick={() => setShowLoginModal(true)}
+      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-xs font-semibold shadow"
+    >
+      Owner Login
+    </button>
+  )}
+</div>
         </div>
 
         <div className="flex-1 overflow-y-auto pb-24 px-4 space-y-4">
@@ -1066,6 +1075,56 @@ export default function App() {
             <span className="text-[9px] mt-0.5">Profile</span>
           </button>
         </div>
+
+        {showLoginModal && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-full max-w-md relative shadow-2xl">
+              <h2 className="text-xl font-bold text-white mb-4">Owner Login</h2>
+
+              <input
+                type="text"
+                placeholder="Username"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value)}
+                className="w-full mb-3 p-3 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"
+              />
+              <input
+                type="password"
+                placeholder="Passwort"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full mb-4 p-3 bg-slate-800 text-white rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"
+              />
+
+              {authError && <p className="text-red-500 text-sm mb-3">{authError}</p>}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowLoginModal(false)}
+                  className="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg hover:bg-slate-700 transition"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (usernameInput === 'Pieck' && passwordInput === 'DEIN_PASSWORT') {
+                      setCurrentUser({ name: 'Pieck', role: 'owner' });
+                      setShowLoginModal(false);
+                      setAuthError('');
+                    } else {
+                      setAuthError('Ungültiger Benutzername oder Passwort.');
+                    }
+                  }}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                >
+                  Einloggen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
