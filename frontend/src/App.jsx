@@ -15,7 +15,8 @@ export default function App() {
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
-    // ==========================================
+   const [showLoginModal, setShowLoginModal] = useState(false); 
+  // ==========================================
   // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
   // ==========================================
 
@@ -125,47 +126,8 @@ export default function App() {
     reader.readAsDataURL(file);
   }
 };
- // Login-Bildschirm Schutz (wenn nicht eingeloggt, zeige nur das Formular)
-  if (!currentUser) {
-    return (
-      <div style={{ padding: '40px', color: '#fff', textAlign: 'center', background: '#0b0f19', minHeight: '100vh' }}>
-        <h2>Welcome to Peack.ai</h2>
-        <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen neuen Account'}</p>
-        
-        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px', margin: '0 auto', gap: '15px' }}>
-          <input 
-            type="text" 
-            placeholder="Benutzername" 
-            value={usernameInput} 
-            onChange={(e) => setUsernameInput(e.target.value)}
-            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff', border: '1px solid #333' }}
-            required
-          />
-          <input 
-            type="password" 
-            placeholder="Passwort" 
-            value={passwordInput} 
-            onChange={(e) => setPasswordInput(e.target.value)}
-            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff', border: '1px solid #333' }}
-            required
-          />
-          <button type="submit" style={{ padding: '10px', borderRadius: '5px', background: '#ff3366', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
-            {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
-          </button>
-        </form>
 
-        {authError && <p style={{ color: '#ff4d4d', marginTop: '10px' }}>{authError}</p>}
-
-        <p style={{ marginTop: '20px', cursor: 'pointer', color: '#ff3366' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-          {authMode === 'login' ? 'Noch keinen Account? Hier registrieren' : 'Schon einen Account? Hier einloggen'}
-        </p>
-      </div>
-    );
-  }
- 
-
-
-  const handleSendMessage = async (e, customMessages = null) => {
+   const handleSendMessage = async (e, customMessages = null) => {
     if (e) e.preventDefault();
     const activeMessages = customMessages || messages;
     if (!inputMessage.trim() && !customMessages) return;
@@ -239,9 +201,11 @@ export default function App() {
     handleSendMessage(null, trimmedMsgs);
   };
 
-  const currentBlockedIds = blockedUsersMap[currentUser.id] || [];
+  const currentBlockedIds = blockedUsersMap[currentUser?.id] || [];
 
   const handleToggleBlock = (charId) => {
+    if (!currentUser) return;
+
     setBlockedUsersMap(prev => {
       const userBlocked = prev[currentUser.id] || [];
       let updatedList;
@@ -355,7 +319,41 @@ export default function App() {
   const recentCharacters = characters.filter(c => !c.pinned && !currentBlockedIds.includes(c.id));
 
   return (
-    <div className="min-h-screen bg-[#07090e] text-white flex flex-col items-center justify-center p-0 sm:p-4 font-sans">
+    !currentUser ? (
+      <div style={{ padding: '40px', color: '#fff', textAlign: 'center' }}>
+        <h2>Welcome to Peack.ai</h2>
+        <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen Account'}</p>
+
+        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px', margin: '0 auto', gap: '10px' }}>
+          <input
+            type="text"
+            placeholder="Benutzername"
+            value={usernameInput}
+            onChange={(e) => setUsernameInput(e.target.value)}
+            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Passwort"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
+            required
+          />
+          <button type="submit" style={{ padding: '10px', borderRadius: '5px', background: '#4f46e5', color: '#fff', cursor: 'pointer' }}>
+            {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
+          </button>
+        </form>
+
+        {authError && <p style={{ color: '#ff4d4d', marginTop: '10px' }}>{authError}</p>}
+
+        <p style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+          {authMode === 'login' ? 'Noch keinen Account? Hier registrieren' : 'Schon einen Account? Einloggen'}
+        </p>
+      </div>
+    ) :
+      <div className="min-h-screen bg-[#07090e] text-white flex flex-col items-center justify-center p-0 sm:p-4 font-sans">
       <div className="w-full sm:max-w-md h-screen sm:h-[850px] bg-[#0c0f17] sm:border sm:border-gray-800 sm:rounded-3xl flex flex-col relative overflow-hidden shadow-2xl">
         
         {/* Top Header */}
@@ -1050,10 +1048,17 @@ export default function App() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
-            <span className="text-[9px] mt-0.5">Chats</span>
+            <span className="text-[9px] mt-0.5">{currentUser ? currentUser.name : 'Login'}</span>
           </button>
 
-          <button onClick={() => setActiveTab('profile')} className={`p-2 transition flex flex-col items-center ${activeTab === 'profile' ? 'text-rose-400' : 'text-gray-400'}`} title="Profile">
+          <button
+            onClick={() => {
+              setActiveTab('profile');
+              if (!currentUser) setShowLoginModal(true);
+            }}
+            className={`p-2 transition flex flex-col items-center ${activeTab === 'profile' ? 'text-rose-400' : 'text-gray-400'}`}
+            title="Profile"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
@@ -1061,7 +1066,6 @@ export default function App() {
             <span className="text-[9px] mt-0.5">Profile</span>
           </button>
         </div>
-
       </div>
     </div>
   );
