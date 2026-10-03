@@ -19,7 +19,9 @@ export default function App() {
   const [isEditingName, setIsEditingName] = useState(false);
 
   // Beim Start prüfen, ob bereits ein Nutzer eingeloggt ist
+  // Beim Start prüfen, ob bereits ein Nutzer eingeloggt ist und Echtzeit-Listener starten
   useEffect(() => {
+    // 1. Session beim Laden abrufen
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setCurrentUser({
@@ -29,10 +31,8 @@ export default function App() {
         });
       }
     });
-  }, []);
 
-  // Auth-State-Listener für Echtzeit-Login/Logout
-  useEffect(() => {
+    // 2. Echtzeit-Listener für Login/Logout-Änderungen
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setCurrentUser({
@@ -45,6 +45,7 @@ export default function App() {
       }
     });
 
+    // Cleanup-Funktion beim Unmounten der Komponente
     return () => {
       subscription.unsubscribe();
     };
@@ -60,7 +61,6 @@ export default function App() {
     });
     if (error) setAuthError(error.message);
   };
-
   // Registrierungs-Funktion
   const handleRegister = async (e) => {
     e.preventDefault();
