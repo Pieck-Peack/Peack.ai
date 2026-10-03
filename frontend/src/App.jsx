@@ -29,7 +29,10 @@ export default function App() {
         });
       }
     });
+  }, []);
 
+  // Auth-State-Listener für Echtzeit-Login/Logout
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setCurrentUser({
@@ -42,7 +45,9 @@ export default function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Login-Funktion
