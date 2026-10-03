@@ -305,22 +305,26 @@ export default function App() {
     }
   };
 
-  const handleCreateFeedPost = (e) => {
-    e.preventDefault();
-    if (!newFeedPostContent.trim()) return;
+ const handleCreateFeedPost = (e) => {
+  e.preventDefault();
+  if (currentUser.role !== 'owner') {
+    alert('Nur der Owner darf Beiträge im Feed erstellen.');
+    return;
+  }
+  if (!newFeedPostContent.trim()) return;
 
-    const newPost = {
-      id: Date.now().toString(),
-      author: currentUser.name,
-      role: currentUser.role,
-      isPledge: false,
-      content: newFeedPostContent,
-      timestamp: 'Just now'
-    };
-
-    setOwnerFeedPosts([newPost, ...ownerFeedPosts]);
-    setNewFeedPostContent('');
+  const post = {
+    id: Date.now().toString(),
+    author: currentUser.name,
+    role: currentUser.role,
+    isPledge: false,
+    content: newFeedPostContent.trim(),
+    timestamp: 'Just now'
   };
+
+  setOwnerFeedPosts(prev => [post, ...prev]);
+  setNewFeedPostContent('');
+};
 
   const handleCreateCharacter = (e) => {
     e.preventDefault();
@@ -472,7 +476,9 @@ export default function App() {
             </div>
           </div>
           <div className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-slate-800 text-slate-200">
-            <span>👑</span> Owner
+            {currentUser.role === 'owner' && '👑 OWNER'}
+            {currentUser.role === 'member' && '💎 MEMBER'}
+            {currentUser.role === 'guest' && '🎀 GAST'}
           </div>
         </div>
 
@@ -974,7 +980,11 @@ export default function App() {
                 
                 <div className="text-center">
                   <div className="font-bold text-base">{currentUser.name}</div>
-                  <div className="text-xs text-rose-400 font-medium mt-0.5 uppercase">👑 {currentUser.role} Account</div>
+                  <div className="text-xs text-rose-400 font-medium mt-0.5 uppercase">
+                       {currentUser.role === 'owner' && '👑 OWNER'}
+                       {currentUser.role === 'member' && '💎 MEMBER'}
+                       {currentUser.role === 'guest' && '🎀 GAST'}
+                 </div>
                 </div>
               </div>
 
