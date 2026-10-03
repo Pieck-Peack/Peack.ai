@@ -15,14 +15,16 @@ export default function App() {
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
-
+    const API_URL = window.location.hostname === 'localhost' 
+  ? 'http://127.0.0.1:8000' 
+  : 'https://peack-ai-backend.onrender.com'; // Falls deine Render-Backend-URL so heißt
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError('');
     const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
     
     try {
-      const response = await fetch(`http://127.0.0.1:8000${endpoint}`, {
+      const response = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: usernameInput, password: passwordInput })
