@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from './supabaseClient'; // <-- HIER diesen Import ergänzen!
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
