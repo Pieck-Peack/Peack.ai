@@ -15,7 +15,8 @@ export default function App() {
   const [usernameInput, setUsernameInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
-   const [showLoginModal, setShowLoginModal] = useState(false); 
+   const [showLoginModal, setShowLoginModal] = useState(false);
+   const [isEditingName, setIsEditingName] = useState(false); 
   // ==========================================
   // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
   // ==========================================
