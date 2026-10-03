@@ -78,7 +78,14 @@ export default function App() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
-  // ==========================================
+  // Gast-Modus-Funktion
+  const handleGuestLogin = () => {
+    setCurrentUser({
+      name: 'Gast',
+      email: 'gast@peack.ai',
+      role: 'member'
+    });
+  };// ==========================================
   // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
   // ==========================================
 
@@ -421,7 +428,13 @@ export default function App() {
           {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
         </button>
       </form>
-
+<button 
+  type="button" 
+  onClick={handleGuestLogin}
+  style={{ background: 'transparent', border: '1px solid #ffcc00', color: '#ffcc00', marginTop: '10px', padding: '12px', borderRadius: '8px', cursor: 'pointer', width: '100%', fontWeight: 'bold' }}
+>
+  Als Gast fortfahren
+</button>
       <p 
         style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8', fontSize: '14px' }} 
         onClick={() => {
