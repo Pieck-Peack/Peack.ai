@@ -187,12 +187,7 @@ export default function App() {
     handleSendMessage(null, newMsgs);
   };
 // Funktion zum Ausloggen (setzt den currentUser auf null zurück)
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setAuthMode('login');
-    setUsernameInput('');
-    setPasswordInput('');
-  }; 
+ 
   const handleRegenerate = () => {
     if (messages.length <= 1) return;
     const lastUserIdx = messages.map(m => m.role).lastIndexOf('user');
@@ -860,15 +855,7 @@ export default function App() {
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, updateUserAvatar)} className="hidden" />
                   </label>
                 </div>
-                {/* Ausloggen-Button zum Testen */}
-                   <div className="my-4 px-1">
-                 <button
-                  onClick={handleLogout}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200 cursor-pointer"
-                  >
-                    Ausloggen
-                   </button>
-                </div>
+                
                 <div className="text-center">
                   <div className="font-bold text-base">{currentUser.name}</div>
                   <div className="text-xs text-rose-400 font-medium mt-0.5 uppercase">👑 {currentUser.role} Account</div>
