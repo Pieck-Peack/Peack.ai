@@ -83,9 +83,11 @@ export default function App() {
     setCurrentUser({
       name: 'Gast',
       email: 'gast@peack.ai',
-      role: 'member'
+      role: 'guest'
     });
-  };// ==========================================
+  };
+
+  // ==========================================
   // AB HIER LÄUFT DEIN BESTEHENDER REST DER APP WEITER!
   // ==========================================
 
