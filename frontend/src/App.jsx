@@ -823,8 +823,8 @@ import React, { useState } from 'react';
             </div>
           )}
           {/* PROFILE TAB */}
-          {activeTab === 'profile' && (
-            <div className="space-y-4">
+            {activeTab === 'profile' && (
+              <div className="space-y-4 pb-24 overflow-y-auto max-h-[calc(100vh-150px)]">
               <h1 className="text-lg font-bold">PROFILE & SETTINGS</h1>
 
               <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl space-y-3">
