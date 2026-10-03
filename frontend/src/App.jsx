@@ -18,10 +18,8 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
 
-  // Beim Start prüfen, ob bereits ein Nutzer eingeloggt ist
-  // Beim Start prüfen, ob bereits ein Nutzer eingeloggt ist und Echtzeit-Listener starten
+ // Supabase Auth-State-Listener & Session-Check
   useEffect(() => {
-    // 1. Session beim Laden abrufen
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setCurrentUser({
@@ -32,7 +30,6 @@ export default function App() {
       }
     });
 
-    // 2. Echtzeit-Listener für Login/Logout-Änderungen
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setCurrentUser({
@@ -45,7 +42,6 @@ export default function App() {
       }
     });
 
-    // Cleanup-Funktion beim Unmounten der Komponente
     return () => {
       subscription.unsubscribe();
     };
