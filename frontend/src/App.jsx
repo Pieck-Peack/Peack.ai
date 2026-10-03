@@ -318,41 +318,41 @@ export default function App() {
   const pinnedCharacters = characters.filter(c => c.pinned && !currentBlockedIds.includes(c.id));
   const recentCharacters = characters.filter(c => !c.pinned && !currentBlockedIds.includes(c.id));
 
-  return (
-     <div style={{ padding: '40px', color: '#fff', textAlign: 'center' }}>
-        <h2>Welcome to Peack.ai</h2>
-        <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen Account'}</p>
+  return !currentUser ? (
+    <div style={{ padding: '40px', color: '#fff', textAlign: 'center' }}>
+      <h2>Welcome to Peack.ai</h2>
+      <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen Account'}</p>
 
-        <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px', margin: '0 auto', gap: '10px' }}>
-          <input
-            type="text"
-            placeholder="Benutzername"
-            value={usernameInput}
-            onChange={(e) => setUsernameInput(e.target.value)}
-            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
-            required
-          />
-          <input
-            type="password"
-            placeholder="Passwort"
-            value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
-            style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
-            required
-          />
-          <button type="submit" style={{ padding: '10px', borderRadius: '5px', background: '#4f46e5', color: '#fff', cursor: 'pointer' }}>
-            {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
-          </button>
-        </form>
+      <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px', margin: '0 auto', gap: '10px' }}>
+        <input
+          type="text"
+          placeholder="Benutzername"
+          value={usernameInput}
+          onChange={(e) => setUsernameInput(e.target.value)}
+          style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Passwort"
+          value={passwordInput}
+          onChange={(e) => setPasswordInput(e.target.value)}
+          style={{ padding: '10px', borderRadius: '5px', background: '#1a2236', color: '#fff' }}
+          required
+        />
+        <button type="submit" style={{ padding: '10px', borderRadius: '5px', background: '#4f46e5', color: '#fff', cursor: 'pointer' }}>
+          {authMode === 'login' ? 'Einloggen' : 'Registrieren'}
+        </button>
+      </form>
 
-        {authError && <p style={{ color: '#ff4d4d', marginTop: '10px' }}>{authError}</p>}
+      {authError && <p style={{ color: '#ff4d4d', marginTop: '10px' }}>{authError}</p>}
 
-        <p style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-          {authMode === 'login' ? 'Noch keinen Account? Hier registrieren' : 'Schon einen Account? Einloggen'}
-        </p>
-      </div>
-    ) :
-      <div className="min-h-screen bg-[#07090e] text-white flex flex-col items-center justify-center p-0 sm:p-4 font-sans">
+      <p style={{ marginTop: '20px', cursor: 'pointer', color: '#38bdf8' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+        {authMode === 'login' ? 'Noch keinen Account? Hier registrieren' : 'Schon einen Account? Einloggen'}
+      </p>
+    </div>
+  ) : (
+    <div className="min-h-screen bg-[#07090e] text-white flex flex-col items-center justify-center p-0 sm:p-4 font-sans">
       <div className="w-full sm:max-w-md h-screen sm:h-[850px] bg-[#0c0f17] sm:border sm:border-gray-800 sm:rounded-3xl flex flex-col relative overflow-hidden shadow-2xl">
         
         {/* Top Header */}
