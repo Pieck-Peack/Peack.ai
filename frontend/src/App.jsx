@@ -374,21 +374,9 @@ export default function App() {
               <div className="text-[9px] text-gray-500 tracking-wider font-semibold uppercase">Peach & Peek</div>
             </div>
           </div>
-
-         <div className="flex items-center space-x-2">
-  {currentUser ? (
-    <div className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-slate-800 text-slate-200">
-      <span>👑</span> {currentUser.role}
-    </div>
-  ) : (
-    <button 
-      onClick={() => setShowLoginModal(true)}
-      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition text-xs font-semibold shadow"
-    >
-      Owner Login
-    </button>
-  )}
-</div>
+          <div className="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider bg-slate-800 text-slate-200">
+            <span>👑</span> Owner
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto pb-24 px-4 space-y-4">
@@ -1109,7 +1097,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (usernameInput === 'Pieck' && passwordInput === 'DEIN_PASSWORT') {
+                    if (usernameInput === 'Pieck' && passwordInput === 'Gh0st141!.') {
                       setCurrentUser({ name: 'Pieck', role: 'owner' });
                       setShowLoginModal(false);
                       setAuthError('');
