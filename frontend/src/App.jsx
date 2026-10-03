@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
- export default function App() {
+export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -823,8 +823,8 @@ import React, { useState } from 'react';
             </div>
           )}
           {/* PROFILE TAB */}
-            {activeTab === 'profile' && (
-              <div className="space-y-4 pb-24 overflow-y-auto max-h-[calc(100vh-150px)]">
+          {activeTab === 'profile' && (
+            <div className="space-y-4 pb-24 overflow-y-auto max-h-[calc(100vh-150px)]">
               <h1 className="text-lg font-bold">PROFILE & SETTINGS</h1>
 
               <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl space-y-3">
@@ -862,6 +862,15 @@ import React, { useState } from 'react';
                     Change
                     <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, updateUserAvatar)} className="hidden" />
                   </label>
+                </div>
+                {/* Ausloggen-Button zum Testen */}
+                   <div className="my-4 px-1">
+                 <button
+                  onClick={handleLogout}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200 cursor-pointer"
+                  >
+                    Ausloggen
+                   </button>
                 </div>
                 <div className="text-center">
                   <div className="font-bold text-base">{currentUser.name}</div>
@@ -906,18 +915,8 @@ import React, { useState } from 'react';
                   className="w-5 h-5 accent-rose-500 cursor-pointer rounded"
                 />
               </div>
-
-          {/* Ausloggen-Button */}
-          <div className="mt-8 mb-12 px-4">
-            <button
-              onClick={handleLogout}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl shadow-xl transition duration-200 text-center cursor-pointer"
-            >
-              Ausloggen
-            </button>
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
           {/* CHAT INTERFACE */}
           {activeTab === 'chat' && selectedCharacter && (
@@ -932,7 +931,7 @@ import React, { useState } from 'react';
                     </div>
                     <span className="text-[9px] text-gray-500">By {selectedCharacter.creator}</span>
                   </div>
-                  
+
                   <div className="flex items-center space-x-1">
                     <button 
                       onClick={() => handleReportCharacter(selectedCharacter.id)} 
@@ -960,7 +959,7 @@ import React, { useState } from 'react';
                 {messages.map((msg, index) => (
                   <div key={index} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm relative group ${msg.role === 'user' ? 'bg-rose-500 text-white font-medium shadow-md' : 'bg-[#131825] border border-gray-800 text-gray-200'}`}>
-                      
+
                       {editingMessageIndex === index ? (
                         <div className="space-y-2">
                           <textarea 
@@ -1036,7 +1035,7 @@ import React, { useState } from 'react';
             </svg>
             <span className="text-[9px] mt-0.5">Handbook</span>
           </button>
-          
+
           <button 
             onClick={() => setActiveTab('create')} 
             className="w-10 h-10 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow-xl -top-3 relative transition transform hover:scale-105 font-bold text-lg"
@@ -1062,5 +1061,6 @@ import React, { useState } from 'react';
         </div>
 
       </div>
-    </div>  );
-}  
+    </div>
+  );
+}
