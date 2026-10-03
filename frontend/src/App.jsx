@@ -822,7 +822,6 @@ import React, { useState } from 'react';
               )}
             </div>
           )}
-
           {/* PROFILE TAB */}
           {activeTab === 'profile' && (
             <div className="space-y-4">
@@ -900,12 +899,21 @@ import React, { useState } from 'react';
                   </div>
                   <div className="text-[11px] text-gray-400 mt-0.5">Enable adult content handling for {currentUser.name}.</div>
                 </div>
-                <input 
-                  type="checkbox" 
-                  checked={currentUser.globalNsfw}
+                <input
+                  type="checkbox"
+                  checked={currentUser.globalNsfw || false}
                   onChange={(e) => toggleUserNsfw(e.target.checked)}
                   className="w-5 h-5 accent-rose-500 cursor-pointer rounded"
                 />
+              </div>
+
+              <div className="mt-6 mb-8 px-4">
+                <button
+                  onClick={handleLogout}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200"
+                >
+                  Ausloggen
+                </button>
               </div>
             </div>
           )}
@@ -913,7 +921,6 @@ import React, { useState } from 'react';
           {/* CHAT INTERFACE */}
           {activeTab === 'chat' && selectedCharacter && (
             <div className="flex flex-col h-full -mx-4 -my-4 p-4 min-h-[700px]">
-              
               <div className="flex flex-col pb-3 border-b border-gray-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <button onClick={() => setActiveTab('home')} className="text-sm text-rose-400 font-bold">← Back</button>
@@ -1009,7 +1016,6 @@ import React, { useState } from 'react';
               </form>
             </div>
           )}
-
         </div>
 
         {/* UNTERE NAVIGATION */}
@@ -1055,6 +1061,5 @@ import React, { useState } from 'react';
         </div>
 
       </div>
-    </div>
-  );
-}
+    </div>  );
+}  
