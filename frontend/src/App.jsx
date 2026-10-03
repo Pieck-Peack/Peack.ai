@@ -907,16 +907,17 @@ import React, { useState } from 'react';
                 />
               </div>
 
-              <div className="mt-6 mb-8 px-4">
-                <button
-                  onClick={handleLogout}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition duration-200"
-                >
-                  Ausloggen
-                </button>
-              </div>
-            </div>
-          )}
+          {/* Ausloggen-Button */}
+          <div className="mt-8 mb-12 px-4">
+            <button
+              onClick={handleLogout}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl shadow-xl transition duration-200 text-center cursor-pointer"
+            >
+              Ausloggen
+            </button>
+          </div>
+        </div>
+      )}
 
           {/* CHAT INTERFACE */}
           {activeTab === 'chat' && selectedCharacter && (
