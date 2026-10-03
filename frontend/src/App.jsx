@@ -319,8 +319,7 @@ export default function App() {
   const recentCharacters = characters.filter(c => !c.pinned && !currentBlockedIds.includes(c.id));
 
   return (
-    !currentUser ? (
-      <div style={{ padding: '40px', color: '#fff', textAlign: 'center' }}>
+     <div style={{ padding: '40px', color: '#fff', textAlign: 'center' }}>
         <h2>Welcome to Peack.ai</h2>
         <p>{authMode === 'login' ? 'Logge dich in deinen Account ein' : 'Erstelle deinen Account'}</p>
 
