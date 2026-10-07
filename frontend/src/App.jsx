@@ -6,18 +6,13 @@ export default function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [messages, setMessages] = useState(() => {
-    try {
-      const saved = localStorage.getItem('peack_chat_messages');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
-  });
+ const [messages, setMessages] = useState([]);
 
-  useEffect(() => {
-    localStorage.setItem('peack_chat_messages', JSON.stringify(messages));
-  }, [messages]);
+ useEffect(() => {
+  if (selectedCharacter) {
+    localStorage.setItem(`peack_chat_${selectedCharacter.id}`, JSON.stringify(messages));
+  }
+}, [messages, selectedCharacter]);
 
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
@@ -222,7 +217,7 @@ export default function App() {
   }
 };
 
-   const handleSendMessage = async (e, customMessages = null) => {
+  const handleSendMessage = async (e, customMessages = null) => {
     if (e) e.preventDefault();
     const activeMessages = customMessages || messages;
     if (!inputMessage.trim() && !customMessages) return;
@@ -232,24 +227,28 @@ export default function App() {
       const userMsg = { role: 'user', content: inputMessage };
       updatedMessages = [...messages, userMsg];
       setMessages(updatedMessages);
-      localStorage.setItem('peack_chat_messages', JSON.stringify(updatedMessages));
+      
       setInputMessage('');
     }
 
+    if (selectedCharacter) {
+      localStorage.setItem(`peack_chat_${selectedCharacter.id}`, JSON.stringify(updatedMessages));
+    }
+
     try {
-    const response = await fetch('https://peack-ai-backend.onrender.com/api/chat', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-   model: 'openrouter/auto-gpt',
-    messages: updatedMessages,
-    system_prompt: selectedCharacter 
-      ? `${selectedCharacter.description} [User name: ${currentUser.name}]` 
-      : 'You are a helpful assistant.'
-  })
-});
+      const response = await fetch('https://peack-ai-backend.onrender.com/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'openrouter/auto-gpt',
+          messages: updatedMessages,
+          system_prompt: selectedCharacter
+            ? `${selectedCharacter.description} [User name: ${currentUser.name}]`
+            : 'You are a helpful assistant.'
+        })
+      });
 
       if (!response.ok) throw new Error('Backend error');
 
