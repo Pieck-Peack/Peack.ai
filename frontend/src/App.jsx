@@ -545,7 +545,16 @@ export default function App() {
                     key={char.id}
                     onClick={() => {
                       setSelectedCharacter(char);
-                      setMessages([{ role: 'assistant', content: char.greeting }]);
+                      const saved = localStorage.getItem(`peack_chat_${char.id}`);
+                      if (saved) {
+                        try {
+                          setMessages(JSON.parse(saved));
+                        } catch (e) {
+                          setMessages([{ role: 'assistant', content: char.greeting }]);
+                        }
+                      } else {
+                        setMessages([{ role: 'assistant', content: char.greeting }]);
+                      }
                       setActiveTab('chat');
                     }}
                     className="bg-[#131825] border border-gray-800 p-3 rounded-2xl cursor-pointer flex flex-col justify-between h-52 relative overflow-hidden group hover:border-rose-500/50 transition"
