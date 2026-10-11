@@ -28,46 +28,79 @@ class ChatRequest(BaseModel):
     model: Optional[str] = "gryphe/mythomax-12-13b"
     system_prompt: Optional[str] = None
 
+from fastapi.responses import StreamingResponse
+import json
+
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
+    if not OPENROUTER_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENROUTER_API_KEY is not configured.")
+
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "HTTP-Referer": "http://localhost:5173",
         "X-Title": "Peack.ai",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     formatted_messages = []
     if req.system_prompt:
         formatted_messages.append({"role": "system", "content": req.system_prompt})
 
-    for m in req.messages:
-        formatted_messages.append({"role": m.role, "content": m.content})
+    for message in req.messages:
+        formatted_messages.append({"role": message.role, "content": message.content})
 
     payload = {
         "model": req.model,
         "messages": formatted_messages,
-        "temperature": 0.7
+        "temperature": 0.7,
+        "stream": True,
     }
 
-    try:
-        response = requests.post(
-            "https://openrouter.ai/api/v1/chat/completions",
-            json=payload,
-            headers=headers,
-            timeout=60
-        )
-        data = response.json()
+    def generate():
+        try:
+            with requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                json=payload,
+                headers=headers,
+                stream=True,
+                timeout=60,
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line:
+                        continue
 
-        if response.status_code != 200:
-            error_msg = data.get("error", {}).get("message", f"HTTP {response.status_code}")
-            raise HTTPException(status_code=500, detail=f"OpenRouter Fehler: {error_msg}")
+                    line_str = line.decode("utf-8")
+                    if not line_str.startswith("data: "):
+                        continue
 
-        reply_text = data["choices"][0]["message"]["content"]
-        return {"reply": reply_text}
+                    data_content = line_str[6:]
+                    if data_content == "[DONE]":
+                        break
 
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Verbindungsfehler zu OpenRouter: {str(e)}")
+                    try:
+                        json_data = json.loads(data_content)
+                    except json.JSONDecodeError:
+                        continue
+
+                    choices = json_data.get("choices") or []
+                    if not choices:
+                        continue
+
+                    delta = choices[0].get("delta", {})
+                    if isinstance(delta, dict):
+                        content = delta.get("content")
+                        if content:
+                            yield content
+        except requests.exceptions.RequestException as e:
+            yield f"\n[Fehler beim Streamen: {str(e)}]"
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            yield f"\n[Fehler beim Streamen: {str(e)}]"
+
+    return StreamingResponse(generate(), media_type="text/plain")
 
 @app.get("/")
 def health_check():
@@ -127,7 +160,7 @@ def register_user(user: UserAuth):
         # Erster registrierter Account wird automatisch Owner (oder prüfe auf "Pieck")
         cursor.execute("SELECT COUNT(*) FROM users")
         count = cursor.fetchone()[0]
-        is_owner = 1 if user.username.lower() == "Pieck" else 0
+        is_owner = 1 if user.username.lower() in ["pieck", "chiara12dahlmann@gmail.com"] else 0
 
         cursor.execute(
             "INSERT INTO users (username, password, is_owner) VALUES (?, ?, ?)",

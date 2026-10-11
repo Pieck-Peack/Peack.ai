@@ -143,6 +143,12 @@ export default function App() {
   ]);
   const [newFeedPostContent, setNewFeedPostContent] = useState('');
 
+  // <--- HIER FÜGST DU DIE FUNKTION EIN --->
+  const handleDeletePost = (postId) => {
+    if (postId === 'forever-pledge') return;
+    setOwnerFeedPosts(ownerFeedPosts.filter(post => post.id !== postId));
+  };
+
   // Charaktere
   const [characters, setCharacters] = useState([
     { 
@@ -197,12 +203,14 @@ export default function App() {
     if (response.error) {
       setAuthError(response.error.message);
     } else if (response.data?.user) {
+     
       // Erfolgreich eingeloggt/registriert
-      setCurrentUser({
-        name: response.data.user.email,
-        role: 'user',
-        globalNsfw: true
-      });
+const savedName = localStorage.getItem('peack_custom_username');
+setCurrentUser({
+  name: savedName || response.data.user.email, // Nutzt den gespeicherten Namen, sonst E-Mail
+  role: (response.data.user.email === 'chiara12dahlmann@gmail.com' || response.data.user.email === 'pieck') ? 'owner' : 'user',
+  globalNsfw: true
+});
     }
   } catch (err) {
     setAuthError('Verbindung zu Supabase fehlgeschlagen.');
@@ -242,7 +250,7 @@ export default function App() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openrouter/auto-gpt',
+          model: 'gryphe/mythomax-l2-13b',
           messages: updatedMessages,
           system_prompt: selectedCharacter
             ? `${selectedCharacter.description} [User name: ${currentUser.name}]`
@@ -252,9 +260,30 @@ export default function App() {
 
       if (!response.ok) throw new Error('Backend error');
 
-      const data = await response.json();
-      const botMsg = { role: 'assistant', content: data.reply || 'Hello!' };
-      setMessages([...updatedMessages, botMsg]);
+      // Leere Bot-Nachricht anlegen, die jetzt live befüllt wird
+      setMessages([...updatedMessages, { role: 'assistant', content: '' }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let fullReply = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fullReply += chunk;
+
+        // Aktualisiert die Bot-Nachricht in Echtzeit Wort für Wort
+        setMessages((prev) => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1] = {
+            role: 'assistant',
+            content: fullReply
+          };
+          return newMsgs;
+        });
+      }
     } catch (err) {
       setMessages([...updatedMessages, { role: 'assistant', content: 'Connection error with AI backend.' }]);
     }
@@ -385,9 +414,11 @@ export default function App() {
   };
 
   const updateCurrentUserName = () => {
-    setCurrentUser(prev => ({ ...prev, name: tempUserName }));
-    setIsEditingName(false);
-  };
+  const updatedUser = { ...currentUser, name: tempUserName };
+  setCurrentUser(updatedUser);
+  localStorage.setItem('peack_custom_username', tempUserName); // Dauerhaft speichern!
+  setIsEditingName(false);
+};
 
   const toggleUserNsfw = (val) => {
     setCurrentUser(prev => ({ ...prev, globalNsfw: val }));
@@ -637,12 +668,23 @@ export default function App() {
                       key={post.id} 
                       className={`bg-[#131825] border p-4 rounded-2xl space-y-2 ${post.isPledge ? 'border-rose-500 shadow-lg shadow-rose-500/10 bg-gradient-to-br from-[#131825] to-rose-950/20' : 'border-gray-800'}`}
                     >
-                      <div className="flex justify-between items-center text-xs">
-                        <span className={`px-2 py-0.5 rounded font-bold ${post.isPledge ? 'bg-rose-500 text-white shadow' : 'bg-rose-500/20 text-rose-300'}`}>
-                          👑 {post.author} ({post.role}) {post.isPledge && '✨ PLEDGE'}
-                        </span>
-                        <span className="text-gray-500 text-[10px]">{post.timestamp}</span>
-                      </div>
+                     <div className="flex justify-between items-center text-xs">
+  <span className={`px-2 py-0.5 rounded font-bold ${post.isPledge ? 'bg-rose-500 text-white shadow' : 'bg-rose-500/20 text-rose-300'}`}>
+    👑 {post.author} ({post.role}) {post.isPledge && '✨ PLEDGE'}
+  </span>
+  <div className="flex items-center space-x-2">
+    <span className="text-gray-500 text-[10px]">{post.timestamp}</span>
+    {post.id !== 'forever-pledge' && (
+      <button 
+        onClick={() => handleDeletePost(post.id)}
+        className="text-red-400 hover:text-red-300 bg-transparent border-none cursor-pointer text-xs"
+        title="Beitrag löschen"
+      >
+        🗑️
+      </button>
+    )}
+  </div>
+</div>
                       <p className={`text-xs leading-relaxed font-medium ${post.isPledge ? 'text-rose-100 font-semibold' : 'text-gray-200'}`}>
                         {post.content}
                       </p>
@@ -1213,3 +1255,4 @@ export default function App() {
     </div>
   );
 }
+
