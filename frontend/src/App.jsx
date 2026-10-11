@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
+import ReactMarkdown from 'react-markdown';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -7,7 +8,11 @@ export default function App() {
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
  const [messages, setMessages] = useState([]);
+const chatEndRef = useRef(null);
 
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
  useEffect(() => {
   if (selectedCharacter) {
     localStorage.setItem(`peack_chat_${selectedCharacter.id}`, JSON.stringify(messages));
@@ -1147,10 +1152,9 @@ setCurrentUser({
                 {messages.map((msg, index) => (
                   <div key={index} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm relative group ${msg.role === 'user' ? 'bg-rose-500 text-white font-medium shadow-md' : 'bg-[#131825] border border-gray-800 text-gray-200'}`}>
-
                       {editingMessageIndex === index ? (
                         <div className="space-y-2">
-                          <textarea 
+                          <textarea
                             value={editedMessageContent}
                             onChange={(e) => setEditedMessageContent(e.target.value)}
                             className="w-full bg-black/40 text-white p-2 rounded-xl text-xs outline-none border border-gray-700 resize-none"
@@ -1161,9 +1165,11 @@ setCurrentUser({
                           </div>
                         </div>
                       ) : (
-                        <div>{msg.content}</div>
+                        <div><ReactMarkdown>{msg.content}</ReactMarkdown></div>
                       )}
                     </div>
+
+                    <div ref={chatEndRef} />
 
                     <div className="flex items-center space-x-2 mt-1 px-1 opacity-60 hover:opacity-100 transition text-[10px] text-gray-400">
                       <span>{msg.role === 'user' ? currentUser.name : selectedCharacter.name}</span>
