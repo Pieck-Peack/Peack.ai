@@ -9,15 +9,25 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
  const [messages, setMessages] = useState([]);
 const chatEndRef = useRef(null);
+const [profileTab, setProfileTab] = useState('characters'); // 'characters' oder 'personas'
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
- useEffect(() => {
-  if (selectedCharacter) {
-    localStorage.setItem(`peack_chat_${selectedCharacter.id}`, JSON.stringify(messages));
-  }
-}, [messages, selectedCharacter]);
+
+  useEffect(() => {
+    async function fetchCharacters() {
+      const { data, error } = await supabase
+        .from('characters')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (data && data.length > 0) {
+        setCharacters(data);
+      }
+    }
+   fetchCharacters();
+  }, []);
 
   // ==========================================
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
@@ -244,10 +254,17 @@ setCurrentUser({
       setInputMessage('');
     }
 
-    if (selectedCharacter) {
-      localStorage.setItem(`peack_chat_${selectedCharacter.id}`, JSON.stringify(updatedMessages));
+   if (selectedCharacter) {
+      // Die gerade hinzugefügte Nachricht in Supabase speichern
+      const lastMsg = updatedMessages[updatedMessages.length - 1];
+      await supabase.from('messages').insert([
+        {
+          character_id: selectedCharacter.id,
+          role: lastMsg.role,
+          content: lastMsg.content
+        }
+      ]);
     }
-
     try {
       const response = await fetch('https://peack-ai-backend.onrender.com/api/chat', {
         method: 'POST',
@@ -372,33 +389,47 @@ setCurrentUser({
     timestamp: 'Just now'
   };
 
-  setOwnerFeedPosts(prev => [post, ...prev]);
-  setNewFeedPostContent('');
-};
-
-  const handleCreateCharacter = (e) => {
+ const handleCreateCharacter = async (e) => {
     e.preventDefault();
-    if (!newCharName.trim() || !newCharDesc.trim()) return;
-
     const gradients = [
-      'from-rose-500 via-pink-600 to-amber-500',
-      'from-pink-500 to-purple-600',
-      'from-rose-600 to-orange-500',
-      'from-fuchsia-600 to-pink-500'
+      'from-rose-500 to-purple-600',
+      'from-blue-500 to-indigo-600',
+      'from-emerald-500 to-teal-600',
+      'from-amber-500 to-orange-600'
     ];
 
-    const created = {
-      id: Date.now().toString(),
+    const newCharData = {
       name: newCharName,
       description: newCharDesc,
-      greeting: `Hello! I am ${newCharName} (${newCharGender}). Let's start chatting!`,
+      greeting: `I am ${newCharName}. Let's start chatting!`,
       nsfw: newCharNsfw,
-      pinned: false,
-      creator: currentUser.name,
-      isOfficial: true,
+      is_private: false,
+      creator: currentUser ? currentUser.name : 'Pieck',
       avatar: newCharAvatar,
-      avatarBg: gradients[Math.floor(Math.random() * gradients.length)]
+      avatar_bg: gradients[Math.floor(Math.random() * gradients.length)]
     };
+
+    const { data, error } = await supabase
+      .from('characters')
+      .insert([newCharData])
+      .select();
+
+    if (error) {
+      console.error('Fehler beim Speichern in Supabase:', error.message);
+      alert('Fehler beim Erstellen des Charakters.');
+      return;
+    }
+
+    if (data && data.length > 0) {
+      setCharacters(prev => [data[0], ...prev]);
+    }
+
+    setNewCharName('');
+    setNewCharDesc('');
+    setNewCharNsfw(true);
+    setNewCharAvatar(null);
+    setActiveTab('home');
+  };
 
     setCharacters(prev => [created, ...prev]);
     setNewCharName('');
@@ -578,20 +609,24 @@ setCurrentUser({
                 {filteredCharacters.map((char) => (
                   <div 
                     key={char.id}
-                    onClick={() => {
-                      setSelectedCharacter(char);
-                      const saved = localStorage.getItem(`peack_chat_${char.id}`);
-                      if (saved) {
-                        try {
-                          setMessages(JSON.parse(saved));
-                        } catch (e) {
-                          setMessages([{ role: 'assistant', content: char.greeting }]);
-                        }
-                      } else {
-                        setMessages([{ role: 'assistant', content: char.greeting }]);
-                      }
-                      setActiveTab('chat');
-                    }}
+                    onClick={async () => {
+      setSelectedCharacter(char);
+      setActiveTab('chat');
+
+      // Nachrichten für diesen Charakter aus Supabase laden
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('character_id', char.id)
+        .order('created_at', { ascending: true });
+
+      if (data && data.length > 0) {
+        setMessages(data.map(m => ({ role: m.role, content: m.content })));
+      } else {
+        // Falls noch keine Nachrichten da sind, die Begrüßung anzeigen
+        setMessages([{ role: 'assistant', content: char.greeting }]);
+      }
+    }}
                     className="bg-[#131825] border border-gray-800 p-3 rounded-2xl cursor-pointer flex flex-col justify-between h-52 relative overflow-hidden group hover:border-rose-500/50 transition"
                   >
                     {char.avatar ? (
@@ -1007,109 +1042,197 @@ setCurrentUser({
           )}
           {/* PROFILE TAB */}
           {activeTab === 'profile' && (
-            <div className="space-y-4 pb-24 overflow-y-auto max-h-[calc(100vh-150px)]">
-              <h1 className="text-lg font-bold">PROFILE & SETTINGS</h1>
+  <div className="p-4 space-y-6 pb-20">
+    {/* Profil-Header */}
+    <div className="flex items-center space-x-4 bg-[#131825] p-4 rounded-2xl border border-gray-800">
+      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-rose-500 bg-rose-500/20 flex items-center justify-center">
+        {currentUser?.avatar ? (
+          <img src={currentUser.avatar} alt="Profile" className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-2xl">🍑</span>
+        )}
+      </div>
+      <div className="flex-1">
+        <h2 className="text-lg font-bold text-white">{currentUser?.name || 'Pieck'}</h2>
+        <p className="text-xs text-gray-400">Cloud Sync: Aktiviert ☁️</p>
+      </div>
+    </div>
 
-              <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl space-y-3">
-                <div className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">
-                  BLOCKED CHARACTERS FOR {currentUser.name.toUpperCase()} ({currentBlockedIds.length})
-                </div>
-                <div className="text-[11px] text-gray-500 italic">🔒 Private datenschutzkonforme Block-Liste für dein Profil.</div>
-                {currentBlockedIds.length === 0 ? (
-                  <div className="text-xs text-gray-500">No characters blocked by you.</div>
-                ) : (
-                  <div className="space-y-2">
-                    {characters.filter(c => currentBlockedIds.includes(c.id)).map(char => (
-                      <div key={char.id} className="flex justify-between items-center bg-[#0c0f17] border border-gray-800 p-2.5 rounded-xl text-xs">
-                        <span className="font-semibold">{char.name}</span>
-                        <button 
-                          onClick={() => handleToggleBlock(char.id)}
-                          className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1 rounded-lg font-bold transition"
-                        >
-                          Unblock
-                        </button>
+    {/* Subtabs: My Characters / Personas */}
+    <div className="flex border-b border-gray-800 space-x-6 text-sm font-semibold">
+      <button
+        onClick={() => setProfileTab('characters')}
+        className={`pb-2 border-b-2 transition ${
+          profileTab === 'characters'
+            ? 'border-rose-500 text-rose-400'
+            : 'border-transparent text-gray-400 hover:text-white'
+        }`}
+      >
+        My Characters ({characters.filter(c => c.creator === (currentUser?.name || 'Pieck')).length})
+      </button>
+      <button
+        onClick={() => setProfileTab('personas')}
+        className={`pb-2 border-b-2 transition ${
+          profileTab === 'personas'
+            ? 'border-rose-500 text-rose-400'
+            : 'border-transparent text-gray-400 hover:text-white'
+        }`}
+      >
+        Personas
+      </button>
+    </div>
+
+    {/* TAB CONTENT: MY CHARACTERS */}
+    {profileTab === 'characters' && (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-bold text-gray-300">Deine erstellten Bots</h3>
+          <button
+            onClick={() => setActiveTab('create')}
+            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold rounded-xl transition"
+          >
+            + New Character
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          {characters
+            .filter(c => c.creator === (currentUser?.name || 'Pieck'))
+            .map(char => (
+              <div
+                key={char.id}
+                className="bg-[#131825] border border-gray-800 rounded-2xl p-3 flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-gray-800 relative flex-shrink-0">
+                    {char.avatar ? (
+                      <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${char.avatar_bg || 'from-rose-500 to-purple-600'} opacity-80 flex items-center justify-center text-lg`}>
+                        🍑
                       </div>
-                    ))}
+                    )}
                   </div>
-                )}
-              </div>
-<div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl flex items-center justify-between">
-  <div>
-    <div className="text-sm font-bold text-gray-200">Account-Sitzung</div>
-    <div className="text-[11px] text-gray-500">Aktuell angemeldet über Supabase.</div>
-  </div>
-  <button
-    onClick={async () => {
-      await supabase.auth.signOut();
-      setCurrentUser(null);
-    }}
-    className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl font-bold transition text-xs"
-  >
-    Ausloggen
-  </button>
-</div>
-              <div className="bg-[#131825] border border-gray-800 p-6 rounded-3xl flex flex-col items-center space-y-3">
-                <div className="w-20 h-20 rounded-full border-2 border-rose-500 bg-gray-800 flex items-center justify-center text-2xl overflow-hidden relative group">
-                  {currentUser.avatar ? (
-                    <img src={currentUser.avatar} className="w-full h-full object-cover" />
-                  ) : (
-                    <span>🍑</span>
-                  )}
-                  <label className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer transition">
-                    Change
-                    <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, updateUserAvatar)} className="hidden" />
-                  </label>
+                  <div>
+                    <h4 className="font-bold text-white text-sm">{char.name}</h4>
+                    <p className="text-xs text-gray-400 line-clamp-1">{char.description || 'Keine Beschreibung'}</p>
+                  </div>
                 </div>
-                
-                <div className="text-center">
-                  <div className="font-bold text-base">{currentUser.name}</div>
-                  <div className="text-xs text-rose-400 font-medium mt-0.5 uppercase">
-                       {currentUser.role === 'owner' && '👑 OWNER'}
-                       {currentUser.role === 'member' && '💎 MEMBER'}
-                       {currentUser.role === 'guest' && '🎀 GAST'}
-                 </div>
-                </div>
-              </div>
 
-              <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl space-y-2">
-                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">USER NAME</div>
-                <div className="flex justify-between items-center">
-                  {isEditingName ? (
-                    <input 
-                      type="text" 
-                      value={tempUserName} 
-                      onChange={(e) => setTempUserName(e.target.value)}
-                      className="bg-black/50 border border-gray-700 text-white px-3 py-1.5 rounded-xl text-sm outline-none focus:border-rose-500"
-                    />
-                  ) : (
-                    <span className="font-bold text-sm text-white">{currentUser.name}</span>
-                  )}
-                  <button 
-                    onClick={() => isEditingName ? updateCurrentUserName() : setIsEditingName(true)}
-                    className="text-rose-400 text-xs bg-rose-500/10 px-3 py-1.5 rounded-xl font-bold hover:bg-rose-500/20"
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={(e) => handleDeleteCharacter(e, char.id)}
+                    className="p-2 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl text-xs"
+                    title="Löschen"
                   >
-                    {isEditingName ? 'Save' : '✏️ Edit'}
+                    🗑️
                   </button>
                 </div>
               </div>
+            ))}
 
-              <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-xs text-white flex items-center space-x-2">
-                    <span>Global NSFW Override</span>
-                    <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded">18+</span>
-                  </div>
-                  <div className="text-[11px] text-gray-400 mt-0.5">Enable adult content handling for {currentUser.name}.</div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={currentUser.globalNsfw || false}
-                  onChange={(e) => toggleUserNsfw(e.target.checked)}
-                  className="w-5 h-5 accent-rose-500 cursor-pointer rounded"
-                />
-              </div>
+          {characters.filter(c => c.creator === (currentUser?.name || 'Pieck')).length === 0 && (
+            <div className="text-center py-8 text-gray-500 text-xs">
+              Du hast noch keine eigenen Charaktere erstellt.
             </div>
           )}
+        </div>
+      </div>
+    )}
+
+    {/* TAB CONTENT: PERSONAS */}
+    {profileTab === 'personas' && (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h3 className="text-sm font-bold text-gray-300">Deine User-Personas</h3>
+        </div>
+        <div className="bg-[#131825] border border-gray-800 rounded-2xl p-4 text-xs text-gray-400 space-y-2">
+          <p><strong className="text-white">Name:</strong> {currentUser?.name || 'Pieck'}</p>
+          <p><strong className="text-white">Bio:</strong> KI-Modell-Tester & Creator</p>
+        </div>
+      </div>
+    )}
+
+    <div className="space-y-4">
+      <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <div className="text-sm font-bold text-gray-200">Account-Sitzung</div>
+          <div className="text-[11px] text-gray-500">Aktuell angemeldet über Supabase.</div>
+        </div>
+        <button
+          onClick={async () => {
+            await supabase.auth.signOut();
+            setCurrentUser(null);
+          }}
+          className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl font-bold transition text-xs"
+        >
+          Ausloggen
+        </button>
+      </div>
+
+      <div className="bg-[#131825] border border-gray-800 p-6 rounded-3xl flex flex-col items-center space-y-3">
+        <div className="w-20 h-20 rounded-full border-2 border-rose-500 bg-gray-800 flex items-center justify-center text-2xl overflow-hidden relative group">
+          {currentUser.avatar ? (
+            <img src={currentUser.avatar} className="w-full h-full object-cover" />
+          ) : (
+            <span>🍑</span>
+          )}
+          <label className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] font-bold opacity-0 group-hover:opacity-100 cursor-pointer transition">
+            Change
+            <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, updateUserAvatar)} className="hidden" />
+          </label>
+        </div>
+
+        <div className="text-center">
+          <div className="font-bold text-base">{currentUser.name}</div>
+          <div className="text-xs text-rose-400 font-medium mt-0.5 uppercase">
+            {currentUser.role === 'owner' && '👑 OWNER'}
+            {currentUser.role === 'member' && '💎 MEMBER'}
+            {currentUser.role === 'guest' && '🎀 GAST'}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl space-y-2">
+        <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">USER NAME</div>
+        <div className="flex justify-between items-center">
+          {isEditingName ? (
+            <input 
+              type="text" 
+              value={tempUserName} 
+              onChange={(e) => setTempUserName(e.target.value)}
+              className="bg-black/50 border border-gray-700 text-white px-3 py-1.5 rounded-xl text-sm outline-none focus:border-rose-500"
+            />
+          ) : (
+            <span className="font-bold text-sm text-white">{currentUser.name}</span>
+          )}
+          <button 
+            onClick={() => isEditingName ? updateCurrentUserName() : setIsEditingName(true)}
+            className="text-rose-400 text-xs bg-rose-500/10 px-3 py-1.5 rounded-xl font-bold hover:bg-rose-500/20"
+          >
+            {isEditingName ? 'Save' : '✏️ Edit'}
+          </button>
+        </div>
+      </div>
+
+      <div className="bg-[#131825] border border-gray-800 p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <div className="font-bold text-xs text-white flex items-center space-x-2">
+            <span>Global NSFW Override</span>
+            <span className="text-[9px] bg-rose-500/20 text-rose-400 px-1.5 py-0.5 rounded">18+</span>
+          </div>
+          <div className="text-[11px] text-gray-400 mt-0.5">Enable adult content handling for {currentUser.name}.</div>
+        </div>
+        <input
+          type="checkbox"
+          checked={currentUser.globalNsfw || false}
+          onChange={(e) => toggleUserNsfw(e.target.checked)}
+          className="w-5 h-5 accent-rose-500 cursor-pointer rounded"
+        />
+      </div>
+    </div>
+  </div>
+)}
 
           {/* CHAT INTERFACE */}
           {activeTab === 'chat' && selectedCharacter && (
@@ -1167,11 +1290,10 @@ setCurrentUser({
                       ) : (
                         <div><ReactMarkdown>{msg.content}</ReactMarkdown></div>
                       )}
+                     <div ref={chatEndRef} />
                     </div>
 
-                    <div ref={chatEndRef} />
-
-                    <div className="flex items-center space-x-2 mt-1 px-1 opacity-60 hover:opacity-100 transition text-[10px] text-gray-400">
+                   <div className="flex items-center space-x-2 mt-1 px-1 opacity-60 hover:opacity-100 transition text-[10px] text-gray-400">
                       <span>{msg.role === 'user' ? currentUser.name : selectedCharacter.name}</span>
                       <span>•</span>
                       {index !== 0 && (
