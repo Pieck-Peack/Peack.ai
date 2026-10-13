@@ -7,9 +7,13 @@ export default function App() {
   const [inputMessage, setInputMessage] = useState('');
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
- const [messages, setMessages] = useState([]);
-const chatEndRef = useRef(null);
-const [profileTab, setProfileTab] = useState('characters'); // 'characters' oder 'personas'
+  const [messages, setMessages] = useState([]);
+  const chatEndRef = useRef(null);
+  const [profileTab, setProfileTab] = useState('characters'); // 'characters' oder 'personas'
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedUser = localStorage.getItem('peack_user');
+    return savedUser ? JSON.parse(savedUser) : { id: 'user_1', name: 'chiara12dahlmann' };
+  });
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -33,7 +37,6 @@ const [profileTab, setProfileTab] = useState('characters'); // 'characters' oder
   // HIER DEN LOGIN-STATE & FUNKTION EINFÜGEN:
   // ==========================================
   // Supabase Auth Integration für die Community
-  const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' oder 'register'
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
@@ -44,18 +47,22 @@ const [profileTab, setProfileTab] = useState('characters'); // 'characters' oder
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        const savedCustomName = localStorage.getItem('peack_custom_username');
         setCurrentUser({
-          name: session.user.email.split('@')[0],
+          name: savedCustomName || session.user.email.split('@')[0],
           email: session.user.email,
           role: session.user.email === 'chiara12dahlmann@gmail.com' ? 'owner' : 'member'
         });
+      } else {
+        setCurrentUser(null);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
+        const savedCustomName = localStorage.getItem('peack_custom_username');
         setCurrentUser({
-          name: session.user.email.split('@')[0],
+          name: savedCustomName || session.user.email.split('@')[0],
           email: session.user.email,
           role: session.user.email === 'chiara12dahlmann@gmail.com' ? 'owner' : 'member'
         });
@@ -259,7 +266,7 @@ setCurrentUser({
       const lastMsg = updatedMessages[updatedMessages.length - 1];
       await supabase.from('messages').insert([
         {
-          character_id: selectedCharacter.id,
+         character_id: String(selectedCharacter.id),
           role: lastMsg.role,
           content: lastMsg.content
         }
@@ -306,6 +313,16 @@ setCurrentUser({
           return newMsgs;
         });
       }
+      // KI-Antwort in Supabase speichern (sobald der Stream fertig ist)
+    if (selectedCharacter && fullReply) {
+      await supabase.from('messages').insert([
+        {
+          character_id: String(selectedCharacter.id),
+          role: 'assistant',
+          content: fullReply
+        }
+      ]);
+    }
     } catch (err) {
       setMessages([...updatedMessages, { role: 'assistant', content: 'Connection error with AI backend.' }]);
     }
@@ -617,7 +634,7 @@ setCurrentUser({
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .eq('character_id', char.id)
+        .eq('character_id', String(char.id))
         .order('created_at', { ascending: true });
 
       if (data && data.length > 0) {
