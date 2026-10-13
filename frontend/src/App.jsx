@@ -627,23 +627,22 @@ setCurrentUser({
                   <div 
                     key={char.id}
                     onClick={async () => {
-      setSelectedCharacter(char);
-      setActiveTab('chat');
+                      setSelectedCharacter(char);
+                      setActiveTab('chat');
+                      setMessages([]);
 
-      // Nachrichten für diesen Charakter aus Supabase laden
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('character_id', String(char.id))
-        .order('created_at', { ascending: true });
+                      const { data, error } = await supabase
+                        .from('messages')
+                        .select('*')
+                        .eq('character_id', String(char.id))
+                        .order('created_at', { ascending: true });
 
-      if (data && data.length > 0) {
-        setMessages(data.map(m => ({ role: m.role, content: m.content })));
-      } else {
-        // Falls noch keine Nachrichten da sind, die Begrüßung anzeigen
-        setMessages([{ role: 'assistant', content: char.greeting }]);
-      }
-    }}
+                      if (data && data.length > 0) {
+                        setMessages(data.map(m => ({ role: m.role, content: m.content })));
+                      } else {
+                        setMessages([{ role: 'assistant', content: char.greeting }]);
+                      }
+                    }}
                     className="bg-[#131825] border border-gray-800 p-3 rounded-2xl cursor-pointer flex flex-col justify-between h-52 relative overflow-hidden group hover:border-rose-500/50 transition"
                   >
                     {char.avatar ? (
